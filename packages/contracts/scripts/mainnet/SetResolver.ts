@@ -1,85 +1,53 @@
-import * as path from "path"
 import { BigNumber, Overrides, providers } from "ethers"
-import { ethers, network, config } from "hardhat"
+import { ethers } from "hardhat"
 import * as utils from "~/scripts/utils"
 
 async function main() {
-    const domainOwnerAddress = "0xC6c5Dc218E535E0D6783aadB83DfFEB232c17058"
-    const ensRegiAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
-    const ethUnit = ethers.utils.parseEther("1")
+    // ---------- Declare and get variables ----------
 
-    //
-    const domainOwner = ethers.provider.getSigner(domainOwnerAddress)
-    await utils.getEthFromHardhatAccounts(domainOwner, ethUnit.mul(100))
+    // Declare utility variables
+    let tx: providers.TransactionResponse
+    let txReceipt: providers.TransactionReceipt
 
-    // Set contract instance
-    const ensRegiJSON = require(path.join(
-        config.paths["root"],
-        "artifacts",
-        "contracts",
-        "ENSRegistryWithFallback.sol",
-        "ENSRegistryWithFallback.json",
-    ))
-    const ensRegiContract = await ethers.getContractAt(ensRegiJSON.abi, ensRegiAddress)
+    // Declare and calculate domain name data
+    const labelTld = "eth" // Label of top level domain (TLD)
+    const labelSld = "token" // Label of second level domain (SLD)
+    const labelTldNameHash = ethers.utils.namehash(labelTld)
+    const labelSldId = ethers.utils.id(labelSld)
+    const domainName = `${labelSld}.${labelTld}`
+    const domainNameEncodePacked = ethers.utils.solidityKeccak256(
+        ["bytes"],
+        [ethers.utils.solidityPack(["bytes32", "bytes32"], [labelTldNameHash, labelSldId])],
+    )
 
-    // const etherscanURL = `https://${
-    //     network.name === "mainnet" ? "" : network.name + "."
-    // }etherscan.io`
-    // console.log(
-    //     `ENSRegistry contract on etherscan: ${etherscanURL}/address/${ensRegiContract.address}`,
-    // )
-
-    // Set TX overrides extra argument
+    // Declare transaction overrides extra arguments
     const overrides: Overrides = {
         gasLimit: BigNumber.from(5000000),
         maxFeePerGas: (await ethers.provider.getFeeData()).maxFeePerGas!,
         maxPriorityFeePerGas: (await ethers.provider.getFeeData()).maxPriorityFeePerGas!,
     }
 
-    const defaultNameHash = "0x" + "00".repeat(32)
-    const labelTLD = "eth" // Label of top level domain (TLD)
-    const labelSLD = "token" // Label of second level domain (SLD)
-    const domainName = `${labelSLD}.${labelTLD}`
+    // Get the ENSRegistry contract instance deployed to the mainnet
+    const ensRegiJson = await utils.getENSRegiFallbackJson()
+    const ensRegiContract = await ethers.getContractAt(ensRegiJson.abi, ensRegiJson.address)
 
-    let tx: providers.TransactionResponse
-    let txReceipt: providers.TransactionReceipt
+    // Get the signer of ENS_DOMAIN_OWNER_PRIVATE_KEY for owning token.eth domain name from the .env file
+    const domainOwner = await utils.getDomainOwner()
 
-    // // Set ethdomain manager to Owner by Deployer
-    // tx = await ensRegiContract.connect(ensRegistryOwner).setSubnodeOwner(
-    //     defaultNameHash,
-    //     ethers.utils.id(labelTLD), // Node hash of TLD label
-    //     domainOwnerAddress,
-    //     overrides,
-    // )
-    // txReceipt = await tx.wait() // Wait for transaction to confirm that block has been mined
-    // console.log(
-    //     `Set TLD \"${labelTLD}\" owner, TX: ${etherscanURL}/tx/${txReceipt.transactionHash}`,
-    // )
+    // ---------- Set the OffchainResolver address as the resolver of the token.eth domain ----------
 
-    // // Set maindomain manager to Owner by above setting Owner
-    // tx = await ensRegiContract.connect(domainOwner).setSubnodeOwner(
-    //     ethers.utils.namehash(labelTLD), // Namehash of TLD
-    //     ethers.utils.id(labelSLD), // Node hash of SLD label
-    //     domainOwnerAddress,
-    //     overrides,
-    // )
-    // txReceipt = await tx.wait() // Wait for transaction to confirm that block has been mined
-    // console.log(
-    //     `Set SLD \"${labelSLD}\" owner, TX: ${etherscanURL}/tx/${txReceipt.transactionHash}`,
-    // )
+    const OffResvJson = await utils.getOffResvJson()
 
-    await utils.impersonateAccounts([domainOwnerAddress])
-
-    // Set fulldomain resolver contract to OffchainResolver by Owner
     tx = await ensRegiContract.connect(domainOwner).setResolver(
         ethers.utils.namehash(domainName), // Namehash of the domain
-        offResvContract.address,
+        OffResvJson.address,
         overrides,
     )
-    txReceipt = await tx.wait() // Wait for transaction to confirm that block has been mined
-    // console.log(
-    //     `Set domain \"${domainName}\" resolver contract, TX: ${etherscanURL}/tx/${txReceipt.transactionHash}`,
-    // )
+    txReceipt = await tx.wait() // Wait for the transaction to be confirmed by the block being mined
+    console.log(
+        "The new OffchainRresolver of the domain:",
+        await ensRegiContract.resolver(domainNameEncodePacked),
+    )
 }
 
 // We recommend this pattern to be able to use async/await everywhere

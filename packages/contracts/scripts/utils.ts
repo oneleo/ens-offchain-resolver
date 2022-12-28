@@ -6,7 +6,7 @@ import { execSync } from "child_process"
 import { ethers, config, network } from "hardhat"
 import { default as prompts } from "prompts"
 
-const networkName = network.name === "hardhat" ? "mainnet" : network.name
+export const networkName = network.name === "hardhat" ? "mainnet" : network.name
 
 export async function getDeployer() {
     const deployerPrivateKey = process.env.DEPLOYER_PRIVATE_KEY
@@ -142,6 +142,16 @@ export function getOffResvJson() {
     return offResvJSON
 }
 
+export function getENSRegiFallbackJson() {
+    const ensRegiJSON = require(path.join(
+        config.paths["root"],
+        "deployments",
+        networkName,
+        "ENSRegistryWithFallback.json",
+    ))
+    return ensRegiJSON
+}
+
 export function writeContractJson(contractName: string, content) {
     const jsonPath = path.join(
         config.paths["root"],
@@ -227,15 +237,9 @@ export async function confirmNextContractAddr(deployer: Signer) {
     return
 }
 
-export function getENSRegiFallbackJson() {
-    const ensRegiJSON = require(path.join(
-        config.paths["root"],
-        "deployments",
-        networkName,
-        "ENSRegistryWithFallback.json",
-    ))
-    return ensRegiJSON
-}
+/*********************************
+ *      Hardhat cheatcodes       *
+ *********************************/
 
 // Impersonate multiple accounts
 export async function impersonateAccounts(addrs: string[]) {

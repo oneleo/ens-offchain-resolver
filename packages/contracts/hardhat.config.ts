@@ -48,6 +48,7 @@ module.exports = {
             tags: ["demo"],
             chainId: 1,
             accounts,
+            gatewayurl: gatewayURL,
         },
     },
     etherscan: {
