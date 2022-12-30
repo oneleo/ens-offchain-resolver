@@ -41,6 +41,7 @@ code ./.env
 >
 > - SIGNING_KEY is used by the gateway to sign the domain.
 > - ALCHEMY_TOKEN is used to connect the blockchain network.
+> - (Option) OFFCHAIN_RESOLVER_ADDRESS is used to verify the signer of the gateway
 
 After setting the env variables, export them: `yarn export-env`
 
@@ -69,6 +70,13 @@ $ eval $(grep '^SIGNING_KEY' .env) && node dist/index.js --private-key ${SIGNING
 
 Serving on port 8080 with signing address 0x3B7D34d0E7e807A9D7aD74F094C5379aca61460D
 ```
+
+> [!TIP]
+> If the OffchainResolver contract exists, you can use the following command to verify the signer of the gateway.
+>
+> ```
+> $ yarn start-goerli:gateway --data token.eth.json -r ${OFFCHAIN_RESOLVER_ADDRESS} -a ${ALCHEMY_TOKEN} -n Goerli
+> ```
 
 Take a look at the data in `token.eth.json` under `packages/gateway/`; it specifies addresses for the name `token.eth` and the `labs.token.eth`.
 

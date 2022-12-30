@@ -250,21 +250,3 @@ export async function impersonateAccounts(addrs: string[]) {
         })
     }
 }
-
-// Transfer ETH to user from Hardhat accounts
-export async function getEthFromHardhatAccounts(user: Signer, amount: BigNumberish): Promise<void> {
-    const accounts = await ethers.getSigners()
-    const userAddr = await user.getAddress()
-    for (let i = 0; i < 20; i++) {
-        const accountBalance = await accounts[i].getBalance()
-        if (accountBalance.gte(amount)) {
-            // Transfer ETH to user
-            await accounts[i].sendTransaction({
-                to: userAddr,
-                value: amount.toString(),
-            })
-            return
-        }
-    }
-    throw new Error("Not enough eth to transfer")
-}

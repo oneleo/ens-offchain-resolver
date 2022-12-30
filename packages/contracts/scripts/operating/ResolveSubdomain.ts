@@ -10,7 +10,7 @@ async function main() {
 
     // Declare the domain name and we want to know the information about it
     const domainUnknown = "neal12.token.eth"
-    //const domainUnknown = "token.eth" // main domain
+    // const domainUnknown = "token.eth" // main domain
 
     // ---------- Try to resolve the subdomain of the token.eth domain using ethers.js ----------
 
